@@ -6,7 +6,7 @@ PATH_TO_SELF = sys.executable if I_AM_EXECUTABLE else __file__
 from modules.EmailAPIs import *
 
 # ---- Quick settings [for Developers to quickly change behavior without changing all files] ----
-VERSION = ['v1.5.3.3', 1533]
+VERSION = ['v1.5.3.5', 1535]
 LOGO = f"""
 ███████╗███████╗███████╗████████╗   ██╗  ██╗███████╗██╗   ██╗ ██████╗ ███████╗███╗   ██╗
 ██╔════╝██╔════╝██╔════╝╚══██╔══╝   ██║ ██╔╝██╔════╝╚██╗ ██╔╝██╔════╝ ██╔════╝████╗  ██║
@@ -23,16 +23,17 @@ LOGO = f"""
 if '--no-logo' in sys.argv:
     LOGO = f"ESET KeyGen {VERSION[0]} by rzc0d3r\n"
 
-DEFAULT_EMAIL_API = 'developermail'
-AVAILABLE_EMAIL_APIS = ('1secmail', 'guerrillamail', 'developermail', 'mailticking', 'fakemail', 'inboxes')
-WEB_WRAPPER_EMAIL_APIS = ('guerrillamail', 'mailticking', 'fakemail', 'inboxes')
+DEFAULT_EMAIL_API = 'fakemail'
+AVAILABLE_EMAIL_APIS = ('1secmail', 'guerrillamail', 'developermail', 'mailticking', 'fakemail', 'inboxes', 'incognitomail')
+WEB_WRAPPER_EMAIL_APIS = ('guerrillamail', 'mailticking', 'fakemail', 'inboxes', 'incognitomail')
 EMAIL_API_CLASSES = {
     'guerrillamail': GuerRillaMailAPI,    
     '1secmail': OneSecEmailAPI,
     'developermail': DeveloperMailAPI,
     'mailticking': MailTickingAPI,
     'fakemail': FakeMailAPI,
-    'inboxes': InboxesAPI
+    'inboxes': InboxesAPI,
+    'incognitomail': IncognitoMailAPI
 }
 MAX_REPEATS_LIMIT = 10
 
@@ -68,7 +69,6 @@ args = {
 
 from modules.WebDriverInstaller import *
 
-# Bypassing ESET antivirus detection
 from modules.EsetTools import EsetRegister as ER
 from modules.EsetTools import EsetKeygen as EK
 from modules.EsetTools import EsetVPN as EV
@@ -274,7 +274,7 @@ def main(disable_exit=False):
             elif args['advanced_key'] or args['protecthub_account']:
                 args['no_headless'] = True
                 if not args['custom_email_api']:
-                    if args['email_api'] not in ['mailticking', 'fakemail', 'inboxes']:
+                    if args['email_api'] not in ['mailticking', 'fakemail', 'inboxes', 'incognitomail']:
                         raise RuntimeError('--advanced-key, --protecthub-account works ONLY if you use the --custom-email-api argument or the following Email APIs: mailticking, fakemail, inboxes!!!')
         # check program updates
         elif args['update']:
@@ -375,19 +375,19 @@ def main(disable_exit=False):
                     console_log('Invalid email syntax!!!', ERROR)
         
         if email_obj.email is not None:
-            eset_password = dataGenerator(10)
-            license_key = None
+            e_passwd = dataGenerator(10)
+            l_key = None
             obtained_from_site = False
             # ESET HOME
             if args['account'] or args['key'] or args['small_business_key'] or args['vpn_codes']:
-                ER_obj = ER(email_obj, eset_password, driver)
+                ER_obj = ER(email_obj, e_passwd, driver)
                 ER_obj.createAccount()
                 ER_obj.confirmAccount()
                 output_line = '\n'.join([
                         '',
                         '-------------------------------------------------',
                         f'Account Email: {email_obj.email}',
-                        f'Account Password: {eset_password}',
+                        f'Account Password: {e_passwd}',
                         '-------------------------------------------------',
                         ''
                 ])
@@ -396,16 +396,16 @@ def main(disable_exit=False):
                     output_filename = 'ESET KEYS.txt'
                     EK_obj = EK(email_obj, driver, 'ESET HOME' if args['key'] else 'SMALL BUSINESS')
                     EK_obj.sendRequestForKey()
-                    license_name, license_key, license_out_date = EK_obj.getLicenseData()
+                    l_name, l_key, l_out_date = EK_obj.getLD()
                     output_line = '\n'.join([
                         '',
                         '-------------------------------------------------',
                         f'Account Email: {email_obj.email}',
-                        f'Account Password: {eset_password}',
+                        f'Account Password: {e_passwd}',
                         '',
-                        f'License Name: {license_name}',
-                        f'License Key: {license_key}',
-                        f'License Out Date: {license_out_date}',
+                        f'License Name: {l_name}',
+                        f'License Key: {l_key}',
+                        f'License Out Date: {l_out_date}',
                         '-------------------------------------------------',
                         ''
                     ])
@@ -419,11 +419,11 @@ def main(disable_exit=False):
                                 '',
                                 '-------------------------------------------------',
                                 f'Account Email: {email_obj.email}',
-                                f'Account Password: {eset_password}',
+                                f'Account Password: {e_passwd}',
                                 '',
-                                f'License Name: {license_name}',
-                                f'License Key: {license_key}',
-                                f'License Out Date: {license_out_date}',
+                                f'License Name: {l_name}',
+                                f'License Key: {l_key}',
+                                f'License Out Date: {l_out_date}',
                                 '',
                                 f'VPN Codes: {vpn_codes_line}',
                                 '-------------------------------------------------',
@@ -432,7 +432,7 @@ def main(disable_exit=False):
 
             # ESET ProtectHub
             elif args['protecthub_account'] or args['advanced_key']:
-                EPHR_obj = EPHR(email_obj, eset_password, driver)
+                EPHR_obj = EPHR(email_obj, e_passwd, driver)
                 EPHR_obj.createAccount()
                 EPHR_obj.confirmAccount()
                 EPHR_obj.activateAccount()
@@ -440,25 +440,25 @@ def main(disable_exit=False):
                         '',
                         '---------------------------------------------------------------------',
                         f'ESET ProtectHub Account Email: {email_obj.email}',
-                        f'ESET ProtectHub Account Password: {eset_password}',
+                        f'ESET ProtectHub Account Password: {e_passwd}',
                         '---------------------------------------------------------------------',
                         ''
                 ])    
                 output_filename = 'ESET ACCOUNTS.txt'
                 if args['advanced_key']:
                     output_filename = 'ESET KEYS.txt'
-                    EPHK_obj = EPHK(email_obj, eset_password, driver)
-                    license_name, license_key, license_out_date, obtained_from_site = EPHK_obj.getLicenseData()
-                    if license_name is not None:
+                    EPHK_obj = EPHK(email_obj, e_passwd, driver)
+                    l_name, l_key, l_out_date, obtained_from_site = EPHK_obj.getLD()
+                    if l_name is not None:
                         output_line = '\n'.join([
                             '',
                             '---------------------------------------------------------------------',
                             f'ESET ProtectHub Account Email: {email_obj.email}',
-                            f'ESET ProtectHub Account Password: {eset_password}',
+                            f'ESET ProtectHub Account Password: {e_passwd}',
                             '',
-                            f'License Name: {license_name}',
-                            f'License Key: {license_key}',
-                            f'License Out Date: {license_out_date}',
+                            f'License Name: {l_name}',
+                            f'License Key: {l_key}',
+                            f'License Out Date: {l_out_date}',
                             '---------------------------------------------------------------------',
                             ''
                         ])
@@ -471,7 +471,7 @@ def main(disable_exit=False):
                 f.write(output_line)
                 f.close()
             
-            if license_key is not None and args['advanced_key'] and obtained_from_site:
+            if l_key is not None and args['advanced_key'] and obtained_from_site:
                 unbind_key = input(f'[  {colorama.Fore.YELLOW}INPT{colorama.Fore.RESET}  ] {colorama.Fore.CYAN}Do you want to unbind the key from this account? (y/n): {colorama.Fore.RESET}').strip().lower()
                 if unbind_key == 'y':
                     EPHK_obj.removeLicense()
